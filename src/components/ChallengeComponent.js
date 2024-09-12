@@ -1,7 +1,8 @@
-import * as React from 'react';
-import ApiClient from "./ApiClient";
+import ChallengeService from "../services/ChallengeService";
+import {Component} from "react";
+import LastAttemptsComponent from "./LastAttemptsComponent";
 
-class Challenge extends React.Component {
+class ChallengeComponent extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -9,14 +10,19 @@ class Challenge extends React.Component {
             b: '',
             user: '',
             message: '',
-            guess: 0
+            guess: 0,
+            lastAttempts: []
         };
         this.handleSubmitResult = this.handleSubmitResult.bind(this);
         this.handleChange = this.handleChange.bind(this);
     }
 
     componentDidMount(): void {
-        ApiClient.challenge().then(res => {
+        this.refreshChallenge();
+    }
+
+    refreshChallenge() {
+        ChallengeService.challenge().then(res => {
             if (res.ok) {
                 res.json().then(json => {
                     this.setState({a: json.factorA, b: json.factorB});
@@ -24,7 +30,7 @@ class Challenge extends React.Component {
             } else {
                 this.updateMessage("Can't reach the server");
             }
-        })
+        });
     }
 
     handleChange(event) {
@@ -34,7 +40,7 @@ class Challenge extends React.Component {
 
     handleSubmitResult(event) {
         event.preventDefault();
-        ApiClient.sendGuess(this.state.user, this.state.a, this.state.b, this.state.guess).then(res => {
+        ChallengeService.sendGuess(this.state.user, this.state.a, this.state.b, this.state.guess).then(res => {
             if (res.ok) {
                 res.json().then(json => {
                     if (json.correct) {
@@ -42,6 +48,8 @@ class Challenge extends React.Component {
                     } else {
                         this.updateMessage(`Oops! Your guess ${json.resultAttempt} is wrong, but keep playing!`);
                     }
+                    this.updateLastAttempts(this.state.user);
+                    this.refreshChallenge();
                 });
             } else {
                 this.updateMessage("Error: server error or not available");
@@ -55,42 +63,59 @@ class Challenge extends React.Component {
         });
     }
 
+    updateLastAttempts(userAlias: string) {
+        ChallengeService.getAttempts(userAlias).then(res => {
+            if (res.ok) {
+                let attempts = [];
+                res.json().then(data => {
+                    data.forEach(item => {
+                        attempts.push(item);
+                    });
+                    this.setState({
+                        lastAttempts: attempts
+                    });
+                })
+            }
+        })
+    }
+
     render() {
         return (
-            <div>
+            <div className="display-column">
                 <div>
                     <h3>Your new challenge is</h3>
-                    <h1>
+                    <div className="challenge">
                         {this.state.a} x {this.state.b}
-                    </h1>
+                    </div>
                 </div>
-                <form className="Form" onSubmit={this.handleSubmitResult}>
-                    <div className="Form-control">
-                        <label>
-                            Your alias
-                        </label>
-                        <input type="text"
+                <form onSubmit={this.handleSubmitResult}>
+                    <div className="form-container">
+                        <label htmlFor="alias">Your alias:</label>
+                        <input id="alias"
+                               type="text"
                                maxLength="12"
                                name="user"
                                value={this.state.user}
                                onChange={this.handleChange}/>
                     </div>
-                    <div className="Form-control">
-                        <label>
-                            Your guess
-                        </label>
-                        <input type="number"
+                    <div className="form-container">
+                        <label htmlFor="guess">Your guess:</label>
+                        <input id="guess"
+                               type="number"
                                min="0"
                                name="guess"
                                value={this.state.guess}
                                onChange={this.handleChange}/>
                     </div>
-                    <input type="submit" value="Submit"/>
+                    <div className="form-container">
+                        <input id="guess" className="input-group submit-button" type="submit" value="Submit"/>
+                    </div>
                 </form>
                 <h4>{this.state.message}</h4>
+                {this.state.lastAttempts.length > 0 && <LastAttemptsComponent lastAttempts={this.state.lastAttempts}/>}
             </div>
         );
     }
 }
 
-export default Challenge;
+export default ChallengeComponent;
