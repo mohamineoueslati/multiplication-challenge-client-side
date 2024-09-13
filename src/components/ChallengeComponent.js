@@ -1,6 +1,7 @@
 import ChallengeService from "../services/ChallengeService";
 import {Component} from "react";
 import LastAttemptsComponent from "./LastAttemptsComponent";
+import LeaderBoardComponent from "./LeaderBoardComponent";
 
 class ChallengeComponent extends Component {
     constructor(props) {
@@ -113,6 +114,7 @@ class ChallengeComponent extends Component {
                 </form>
                 <h4>{this.state.message}</h4>
                 {this.state.lastAttempts.length > 0 && <LastAttemptsComponent lastAttempts={this.state.lastAttempts}/>}
+                <LeaderBoardComponent />
             </div>
         );
     }
